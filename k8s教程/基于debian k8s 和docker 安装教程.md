@@ -60,6 +60,16 @@ docker-ce | 17.03.0~ce-0~ubuntu-xenial | https://mirrors.aliyun.com/docker-ce/li
 
 ```
 sudo apt-get -y install docker-ce=[VERSION]
+
+```
+
+```
+创建/etc/docker/daemon.json
+{
+  "registry-mirrors": [
+ "https://docker.mirrors.ustc.edu.cn"
+ ]
+}
 ```
 
 
@@ -223,4 +233,22 @@ sudo docker run -d \
 默认账号 admin/Kuboard123 
 
 接下来按提示操作
+
+#### 4二进制安装
+
+## 3微服务spring-cloud-alibaba
+
+### 3.1安装nacos-k8s
+
+
+
+```bsh
+ apt-get install nfs-common nfs-kernel-server
+```
+
+启动
+
+```
+systemctl start nfs-kernel-server
+```
 
