@@ -1,10 +1,12 @@
 
 
+
+
 # 基于debian k8s 和docker 安装教程
 
 ## 0 准备工具 
 
-比如openssh 开启 root 远程访问，linux 系统ip 固定，镜像源用http://ftp.cn.debian.org (官方中国镜像)
+比如ssh 开启 root 远程访问，linux 系统ip 固定，镜像源用http://ftp.cn.debian.org (官方中国镜像)
 
 ## **1 安装docker-ce**
 
@@ -28,6 +30,8 @@ curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg | apt-key add -
 ### Step 3: 写入软件源信息
 ```
 sudo add-apt-repository "deb [arch=amd64] https://mirrors.aliyun.com/docker-ce/linux/debian $(lsb_release -cs) stable"
+
+https://mirrors.aliyun.com/docker-ce/linux/debian  bullseye stable 
 ```
 
 
@@ -70,6 +74,33 @@ sudo apt-get -y install docker-ce=[VERSION]
  "https://docker.mirrors.ustc.edu.cn"
  ]
 }
+
+```
+
+#推荐
+
+```
+{
+    "registry-mirrors": ["http://hub-mirror.c.163.com", "https://docker.mirrors.ustc.edu.cn"]
+}
+systemctl restart docker.service
+```
+
+#报错
+
+```
+error: failed to run Kubelet: failed to create kubelet: misconfiguration: kubelet cgroup driver: “cgroupfs” is different from docker cgroup driver: “systemd”
+解决方式
+#修改daemon.json
+vim /etc/docker/daemon.json
+#添加如下属性
+{"exec-opts": ["native.cgroupdriver=systemd"],
+        "registry-mirrors":["https://reg-mirror.qiniu.com/","https://docker.mirrors.ustc.edu.cn"]
+}
+
+然后重启docker 和kubelet 
+systemctl daemon-reload
+systemctl restart docker
 ```
 
 
@@ -92,8 +123,9 @@ https://developer.aliyun.com/mirror/
 
 ```
 apt-get update && apt-get install -y apt-transport-https
-curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add - 
-cat <<EOF /etc/apt/sources.list.d/kubernetes.list
+curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add -
+#修复不能添加问题 
+cat <<EOF  | sudo tee /etc/apt/sources.list.d/kubernetes.list
 deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
 EOF 
 
@@ -127,8 +159,14 @@ sudo apt install kubelet  kubeadm kubectl
 执行 
 
 ```
+kubeadm 22
 docker pull coredns/coredns:1.8.4
 docker tag coredns/coredns:1.8.4 registry.aliyuncs.com/google_containers/coredns:v1.8.4
+
+kubeadm 21
+docker pull coredns/coredns:1.8.0
+docker tag coredns/coredns:1.8.0 registry.aliyuncs.com/google_containers/coredns/coredns:v1.8.0
+ 
 ```
 
 
@@ -145,13 +183,16 @@ apt remove --purge kubelet  kubeadm kubectl
 
 ```
 sudo apt-get install -y kubelet=1.20.0-00 kubeadm=1.20.0-00 kubectl=1.20.0-00
+sudo apt-get install -y kubelet=1.21.0-00 kubeadm=1.21.0-00 kubectl=1.21.0-00
+sudo apt-get install -y kubelet=1.19.0-00 kubeadm=1.19.0-00 kubectl=1.19.0-00
 ```
 
 稳住版本号
 
 ```
 sudo apt-mark hold kubelet=1.20.0-00 kubeadm=1.20.0-00 kubectl=1.20.0-00
-
+sudo apt-mark hold kubelet=1.21.0-00 kubeadm=1.21.0-00 kubectl=1.21.0-00
+sudo apt-mark hold kubelet=1.19.0-00 kubeadm=1.19.0-00 kubectl=1.19.0-00
 ```
 
 ### 3 k8s 初始化
@@ -162,6 +203,9 @@ sudo apt-mark hold kubelet=1.20.0-00 kubeadm=1.20.0-00 kubectl=1.20.0-00
 
 ```
 kubeadm init --apiserver-advertise-address=192.168.3.100 --image-repository registry.aliyuncs.com/google_containers --kubernetes-version v1.20.0 --service-cidr=10.96.0.0/12  --pod-network-cidr=10.244.0.0/16
+
+
+kubeadm init --apiserver-advertise-address=192.168.3.100 --image-repository registry.aliyuncs.com/google_containers --kubernetes-version v1.21.0 --service-cidr=10.96.0.0/12  --pod-network-cidr=10.244.0.0/16
 
 
 ```
@@ -201,18 +245,30 @@ kubectl get nodes -o wide
 kubeadm token create --print-join-command
 ```
 
+kubeadm join 192.168.3.100:6443 --token phrkir.z1tjj10vqgq1kl6c --discovery-token-ca-cert-hash sha256:c00d682742e32989778c77ee10a330a2fcd3e61899bbe259306526385133b6ec
+
 #### 3.2 node 点加入k8s 集群
 
 **后面token 有3.1 生成**
 
 ```
-kubeadm join 192.168.3.100:6443 --token 4dfwyc.t6lu91gtt1pxd1xe \
-        --discovery-token-ca-cert-hash sha256:aa008c02a03003d10486b2dc1413e77a58655665d138dea1aac8e5bf0da52e6d
+kubeadm join 192.168.3.100:6443 --token bjvat6.5jejaxe0w8a9a3bv     --discovery-token-ca-cert-hash sha256:8ec679f5543730ef867ad7d11ccfd985279e216c4a6a04a592cd7662a126b337
 ```
+
+#
+
+        [WARNING SystemVerification]: this Docker version is not on the list of validated versions: 20.10.8. Latest validated version: 19.03
+        error execution phase preflight: [preflight] Some fatal errors occurred:
+            [ERROR Swap]: running with swap on is not supported. Please disable swap
+    [preflight] If you know what you are doing, you can make a check non-fatal with `--ignore-preflight-errors=...`
+    To see the stack trace of this error execute with --v=5 or higher
+<u>需要关闭虚拟内存</u>
+
+<u>swapoff -a 和注释/etc/fstab 对应的</u>
 
 #### 3.3安装web 可视化界面
 
-官网地址
+官网地址这个比较省资源
 
 ```
 https://www.kuboard.cn/
@@ -228,11 +284,41 @@ sudo docker run -d \
   -e KUBOARD_AGENT_SERVER_TCP_PORT="10081" \
   -v /root/kuboard-data:/data \
   eipwork/kuboard:v3
+  #升级
+  https://kuboard.cn/install/v3-upgrade.html#%E5%A6%82%E6%9E%9C%E4%BB%A5-docker-run-%E8%BF%90%E8%A1%8C-kuboard
+  sudo docker run -d \
+  --restart=unless-stopped \
+  --name=kuboard \
+  -p 8080:80/tcp \
+  -p 10081:10081/udp \
+  -p 10081:10081/tcp \
+  -e KUBOARD_ENDPOINT="http://192.168.3.49:8080" \
+  -e KUBOARD_AGENT_SERVER_UDP_PORT="10081" \
+  -e KUBOARD_AGENT_SERVER_TCP_PORT="10081" \
+  -v /root/kuboard-data:/data \
+  eipwork/kuboard:v3.1.4.3
 ```
 
 默认账号 admin/Kuboard123 
 
 接下来按提示操作
+
+其他还有kubesphere，rancher,等等
+
+#### 3.4 rancher 操作
+
+```
+docker run -d --restart=unless-stopped \
+  -p 8080:80 -p 8443:443 \
+  --privileged \
+  -v /home/rancher:/var/lib/rancher \
+ rancher/rancher:latest
+
+ docker run -d --restart=unless-stopped   -p 80:80 -p 443:443   rancher/rancher:latest
+ docker run -d -v /tmp/rancher:/tmp/rancher --restart=unless-stopped  --privileged -p 80:80 -p 443:443 rancher/rancher:stable
+```
+
+
 
 #### 4二进制安装
 
@@ -250,5 +336,42 @@ sudo docker run -d \
 
 ```
 systemctl start nfs-kernel-server
+```
+
+安装helm
+
+```fallback
+curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+sudo apt-get install apt-transport-https --yes
+echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
+```
+
+有问题可采用去官网下载
+
+```shell
+https://github.com/helm/helm/releases
+```
+
+然后解压
+
+```shell
+cp linux-amd64/helm /usr/local/bin/
+	
+```
+
+配置源
+
+```
+# 配置微软源
+helm repo add stable http://mirror.azure.cn/kubernetes/charts
+# 配置阿里源
+helm repo add aliyun https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
+# 配置google源
+helm repo add google https://kubernetes-charts.storage.googleapis.com/
+
+# 更新
+helm repo update
 ```
 
