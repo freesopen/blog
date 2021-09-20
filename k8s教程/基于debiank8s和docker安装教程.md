@@ -321,17 +321,24 @@ sudo docker run -d \
   #升级
   
   https://kuboard.cn/install/v3-upgrade.html#%E5%A6%82%E6%9E%9C%E4%BB%A5-docker-run-%E8%BF%90%E8%A1%8C-kuboard
+  
+docker stop $(docker ps -a | grep "eipwork/kuboard" | awk '{print $1 }')
+docker rm $(docker ps -a | grep "eipwork/kuboard" | awk '{print $1 }')
+
+ 
+
+ 
   sudo docker run -d \
   --restart=unless-stopped \
   --name=kuboard \
-  -p 8080:80/tcp \
+  -p 18080:80/tcp \
   -p 10081:10081/udp \
   -p 10081:10081/tcp \
-  -e KUBOARD_ENDPOINT="http://192.168.3.100:8080" \
+  -e KUBOARD_ENDPOINT="http://192.168.3.100:18080" \
   -e KUBOARD_AGENT_SERVER_UDP_PORT="10081" \
   -e KUBOARD_AGENT_SERVER_TCP_PORT="10081" \
   -v /root/kuboard-data:/data \
-  eipwork/kuboard:v3.1.6.0
+  eipwork/kuboard:v3.1.6.1
 ```
 
 默认账号 admin/Kuboard123 
@@ -359,7 +366,9 @@ docker run -d --restart=unless-stopped \
 
 ## 3微服务spring-cloud-alibaba
 
-### 3.1安装nacos-k8s
+### 3.1搭建NFS Server
+
+master 和node 都要安装
 
 
 
@@ -372,6 +381,60 @@ docker run -d --restart=unless-stopped \
 ```
 systemctl start nfs-kernel-server
 ```
+
+配置
+
+```
+执行命令 `vim /etc/exports`，创建 exports 文件，文件内容如下：
+#/home/nfs/ 共享文件目录
+
+/home/nfs/ *(insecure,rw,sync,no_root_squash)
+# 创建共享目录，如果要使用自己的目录，请替换本文档中所有的 /root/nfs_root/
+
+mkdir /home/nfs/
+
+systemctl enable nfs-kernel-server
+
+systemctl start nfs-kernel-server
+exportfs -r
+```
+
+
+
+#### 3.1.1[#](https://kuboard.cn/learning/k8s-intermediate/persistent/nfs.html#在客户端测试nfs)在客户端测试nfs
+
+```sh
+# showmount -e $(nfs服务器的IP)
+showmount -e 192.168.3.100
+# 输出结果如下所示
+Export list for 192.168.3.100:/home/nfs/ *
+```
+
+#### 3.1.2 客户机挂载
+
+执行以下命令挂载 nfs 服务器上的共享目录到本机路径 `/root/nfsmount`
+
+```sh
+mkdir /home/nfs/
+# mount -t nfs $(nfs服务器的IP):/home/nfs /home/nfs
+mount -t nfs 192.168.3.100:/home/nfs /home/nfs
+# 写入一个测试文件
+echo "hello nfs server" > /home/nfs/test2.txt
+```
+
+在 nfs 服务器上执行以下命令，验证文件写入成功
+
+```sh
+cat /home/nfs/test2.txt
+```
+
+参考文档
+
+https://kuboard.cn/learning/k8s-intermediate/persistent/nfs.html#%E5%9C%A8%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%B5%8B%E8%AF%95nfs
+
+### 3.2安装nacos-k8s
+
+##### 
 
 安装helm
 
@@ -396,7 +459,35 @@ cp linux-amd64/helm /usr/local/bin/
 	
 ```
 
-配置源
+#debian/ubuntu 安装apt 方式
+
+```
+curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+sudo apt-get install apt-transport-https --yes
+echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
+ 
+```
+
+国内镜像
+
+```
+删除默认的源
+helm repo remove stable
+2、增加新的国内镜像源
+helm repo add stable https://burdenbear.github.io/kube-charts-mirror/
+或者
+helm repo add stable https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
+
+3、查看helm源添加情况
+helm repo list
+4、搜索测试
+
+helm search mysql
+```
+
+
 
 ```
 # 配置微软源
