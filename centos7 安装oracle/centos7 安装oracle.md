@@ -67,7 +67,7 @@ yum makecache
 yum install vim 
 ```
 
-# 1开始安装数据库
+# 1开始安装数据库-静默安装
 
 准备依赖包文档*http://docs.oracle.com/cd/E11882_01/install.112/e24326/toc.htm#BHCCADGD*
 
@@ -117,7 +117,7 @@ yum -y install binutils compat-libcap1 compat-libstdc++-33 compat-libstdc++-33*i
 检查命令
 
 ```
-yum -y install binutils compat-libcap1 compat-libstdc++-33 compat-libstdc++-33*i686 compat-libstdc++-33*.devel compat-libstdc++-33 compat-libstdc++-33*.devel gcc gcc-c++ glibc glibc*.i686 glibc-devel glibc-devel*.i686 ksh libaio libaio*.i686 libaio-devel libaio-devel*.devel libgcc libgcc*.i686 libstdc++ libstdc++*.i686 libstdc++-devel libstdc++-devel*.devel libXi libXi*.i686 libXtst libXtst*.i686 make sysstat unixODBC unixODBC*.i686 unixODBC-devel unixODBC-devel*.i686
+rpm -q binutils compat-libcap1 compat-libstdc++-33 gcc gcc-c++ glibc glibc-devel ksh libaio libaio-devel libgcc libstdc++ libstdc++-devel libXi libXtst  make sysstat  unixODBC unixODBC-devel
 ```
 
 ## 2 创建用户
@@ -139,6 +139,19 @@ uid=1001(oracle) gid=1001(oinstall) groups=1001(oinstall),1002(dba)
 
 ```
 vim /etc/sysctl.conf
+
+我的配置8g 
+fs.aio-max-nr = 1048576
+fs.file-max = 6815744
+kernel.shmall = 2147483648
+kernel.shmmax = 8589934592
+kernel.shmmni = 4096
+kernel.sem = 250 32000 100 128
+net.ipv4.ip_local_port_range = 9000 65500
+net.core.rmem_default = 262144
+net.core.rmem_max = 4194304
+net.core.wmem_default = 262144
+net.core.wmem_max = 1048576
 ```
 
 内存配置
@@ -193,7 +206,7 @@ oracle soft stack 10240
 vim /etc/pam.d/login
 下面64 和32 二选一
 #64 位操作系统需要
-/lib64/security/pam_limits.so
+session required  /lib64/security/pam_limits.so
 session required pam_limits.so
 #32 位
 session required /lib/security/pam_limits.so
@@ -204,6 +217,7 @@ session required pam_limits.so
 在/etc/profile 文件中，使用文本编辑器或vi命令增加或修改以下内容
 
 ```
+vim /etc/profile
 if [ $USER = "oracle" ]; then
    if [ $SHELL = "/bin/ksh" ]; then
        ulimit -p 16384
@@ -389,3 +403,15 @@ dbca -silent -responseFile etc/dbca.rsp
 > ```
 
 ![image-20220128153137040](assets/image-20220128153137040.png)
+
+# 2GUI 安装
+
+静默安装的1，2，3，4，5，6，7 步骤一样 其余参考window 安装类似
+
+**需要提前开启x11 forword 功能**
+
+## 1 开始安装
+
+database 授权
+
+oracle 用户执行 ./runInstaller
