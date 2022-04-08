@@ -187,7 +187,11 @@ docker tag coredns/coredns:1.8.4 registry.aliyuncs.com/google_containers/coredns
 kubeadm 21
 docker pull coredns/coredns:1.8.0
 docker tag coredns/coredns:1.8.0 registry.aliyuncs.com/google_containers/coredns/coredns:v1.8.0
- 
+ kubeadm 23
+ docker tag coredns/coredns:1.8.6 registry.aliyuncs.com/google_containers/coredns:v1.8.6
+
+ docker pull coredns/coredns:1.8.6
+docker tag coredns/coredns:1.8.6 registry.aliyuncs.com/google_containers/coredns:v1.8.6
 ```
 
 ##### 2.1.2 iptables 很重要不然k8s node 可以会有
