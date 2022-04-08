@@ -187,10 +187,9 @@ docker tag coredns/coredns:1.8.4 registry.aliyuncs.com/google_containers/coredns
 kubeadm 21
 docker pull coredns/coredns:1.8.0
 docker tag coredns/coredns:1.8.0 registry.aliyuncs.com/google_containers/coredns/coredns:v1.8.0
- kubeadm 23
- docker tag coredns/coredns:1.8.6 registry.aliyuncs.com/google_containers/coredns:v1.8.6
 
- docker pull coredns/coredns:1.8.6
+kubeadm 23
+docker pull coredns/coredns:1.8.6
 docker tag coredns/coredns:1.8.6 registry.aliyuncs.com/google_containers/coredns:v1.8.6
 ```
 
