@@ -16,4 +16,4 @@
 
 环境变量添加完成以后把 `.vagrant.d` 文件夹从 `C:\Users\用户名\.vagrant.d` 移动到 `E:\Home\.vagrant.d` 就可以了。
 
-![](img\15460614-0b0a815115beb5e1.png)
+![](image\assert\1651757883910.png)
