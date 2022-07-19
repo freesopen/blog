@@ -5,7 +5,6 @@
 ```
 npm config get cache
 npm config get prefix
-
 ```
 
 # 列举配置信息
@@ -16,5 +15,4 @@ npm config list
 
 npm config set prefix "D:\local\npm\node_global"
 npm config set cache "D:\local\npm\node_cache"
-
 ```
